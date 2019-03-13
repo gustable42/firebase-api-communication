@@ -99,6 +99,16 @@ exports.woocommerceCustomersTotals = functions.https.onRequest((req, res) => {
   } else res.status(401).send("Forbidden");
 });
 
+exports.woocommerceOrdersTotals = functions.https.onRequest((req, res) => {
+  if(!isPutRequest(req)) {
+    WooCommerce.get('reports/orders/totals', (err, data, result) => {
+      if(err) console.log(err.stack);
+      console.log(result);
+    });
+    return res.status(200).send('Successful connection');
+  } else res.status(401).send("Forbidden");
+});
+
 
 // Checks if the HTTP Request's method is a PUT method
 const isPutRequest = req => (req.method === 'PUT') ? true : false;
