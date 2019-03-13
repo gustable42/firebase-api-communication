@@ -31,12 +31,9 @@ exports.woocommerceOrders = functions.https.onRequest((req, res) => {
 
   if(typeof params.num !== 'undefined') numOrders = params.num;
 
-  if(req.method === 'PUT') {
-    return res.status(403).send('Forbidden!');
-  } else {
+  if(!isPutRequest(req)) {
     WooCommerce.get(`orders?per_page=${numOrders}`, (err, data, result) => {
       if(err) console.log(err.stack);
-      console.log(numOrders);
       console.log(result);
     });
     return res.status(200).send('Successful connection');
@@ -54,14 +51,9 @@ exports.woocommerceSalesReport = functions.https.onRequest((req, res) => {
   let minDate = params.min;
   let maxDate = params.max;
 
-  if(req.method === 'PUT') {
-    return res.status(403).send('Forbidden!');
-  } else if((typeof minDate !== 'undefined') && (typeof maxDate !== 'undefined')) {
+  if(!isPutRequest(req) && (typeof minDate !== 'undefined') && (typeof maxDate !== 'undefined')) {
 
-    let minDateToCompare = new Date(minDate);
-    let maxDateToCompare = new Date(maxDate);
-
-    if(minDateToCompare <= maxDateToCompare) {
+    if(isMaxDateNewest(minDate, maxDate)) {
 
       url = `reports/sales?date_min=${minDate}&date_max=${maxDate}`;
       WooCommerce.get(url, (err, data, result) => {
@@ -74,3 +66,34 @@ exports.woocommerceSalesReport = functions.https.onRequest((req, res) => {
     
   } else return res.status(400).send('Bad request');
 });
+
+exports.woocommerceTopSellersReport = functions.https.onRequest((req, res) => {
+  let url;
+  const params = req.query;
+  let minDate = params.min;
+  let maxDate = params.max;
+
+  if(!isPutRequest(req) && (typeof minDate !== 'undefined') && (typeof maxDate !== 'undefined')) {
+
+    if(isMaxDateNewest(minDate, maxDate)) {
+
+      url = `reports/top_sellers??date_min=${minDate}&date_max=${maxDate}`;
+      WooCommerce.get(url, (err, data, result) => {
+        if(err) console.err(err.stack);
+        console.log(result);
+      });
+
+    } else console.log('Data mínima maior que data máxima');
+    return res.status(200).send('Sucessful connection');
+    
+  } else return res.status(400).send('Bad request');
+});
+
+const isPutRequest = req => (req.method === 'PUT') ? true : false;
+
+const isMaxDateNewest = (minDate, maxDate) => {
+  let minDateToCompare = new Date(minDate);
+  let maxDateToCompare = new Date(maxDate);
+
+  return (minDateToCompare <= maxDateToCompare) ? true : false;
+}
