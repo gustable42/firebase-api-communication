@@ -1,1 +1,1 @@
-# Cloud functions for Firebase to make HTTP Requests to Woocommerce Rest API
+# Cloud functions for Firebase to send HTTP Requests to Woocommerce Rest API
