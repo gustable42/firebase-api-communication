@@ -89,8 +89,21 @@ exports.woocommerceTopSellersReport = functions.https.onRequest((req, res) => {
   } else return res.status(400).send('Bad request');
 });
 
+exports.woocommerceCustomersTotals = functions.https.onRequest((req, res) => {
+  if(!isPutRequest(req)) {
+    WooCommerce.get('reports/customers/totals', (err, data, result) => {
+      if(err) console.log(err.stack);
+      console.log(result);
+    });
+    return res.status(200).send('Successful connection');
+  } else res.status(401).send("Forbidden");
+});
+
+
+// Checks if the HTTP Request's method is a PUT method
 const isPutRequest = req => (req.method === 'PUT') ? true : false;
 
+// Checks if minDate is older than maxDate
 const isMaxDateNewest = (minDate, maxDate) => {
   let minDateToCompare = new Date(minDate);
   let maxDateToCompare = new Date(maxDate);
