@@ -106,7 +106,7 @@ exports.woocommerceOrdersTotals = functions.https.onRequest((req, res) => {
       console.log(result);
     });
     return res.status(200).send('Successful connection');
-  } else res.status(401).send("Forbidden");
+  } else return res.status(401).send("Forbidden");
 });
 
 exports.woocommerceProductsTotals = functions.https.onRequest((req, res) => {
@@ -116,7 +116,21 @@ exports.woocommerceProductsTotals = functions.https.onRequest((req, res) => {
       console.log(result);
     });
     return res.status(200).send('Successful connection');
-  } else res.status(401).send("Forbidden");
+  } else return res.status(401).send("Forbidden");
+});
+
+exports.woocommerceNewOrderNotification = functions.https.onRequest((req, res) => {
+  const params = req.query;
+  let id = params.id;
+  console.log(id);
+
+  if(!isPutRequest(req)) {
+    WooCommerce.get(`orders/${id}`, (err, data, result) => {
+      if(err) console.log(err.stack);
+      console.log(result);
+    });
+    return res.status(200).send('Successful connection');
+  } else return res.status(401).send("Forbidden");
 });
 
 // Checks if the HTTP Request's method is a PUT method
