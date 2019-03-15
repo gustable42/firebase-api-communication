@@ -122,6 +122,7 @@ exports.woocommerceProductsTotals = functions.https.onRequest((req, res) => {
 exports.woocommerceNewOrderNotification = functions.https.onRequest((req, res) => {
   const params = req.query;
   let id = params.id;
+  console.log(id);
 
   if(!isPutRequest(req)) {
     WooCommerce.get(`orders/${id}`, (err, data, result) => {
