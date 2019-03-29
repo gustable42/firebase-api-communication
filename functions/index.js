@@ -1,8 +1,11 @@
 // The Cloud Functions for Firebase SDK to create Cloud Functions and setup triggers.
 const functions = require('firebase-functions');
-
 // The Firebase Admin SDK to access the Firebase Realtime Database.
 const admin = require('firebase-admin');
+// Needed dependencies for sendEmail function
+const nodemailer = require('nodemailer');
+const cors = require('cors')({origin: true});
+
 admin.initializeApp();
 
 //Consumer key and secret
@@ -27,16 +30,18 @@ const WooCommerce = new WooCommerceAPI({
  */
 exports.woocommerceOrders = functions.https.onRequest((req, res) => {
   let numOrders = 10;
+  let ordersList
   const params = req.query;
 
   if(typeof params.num !== 'undefined') numOrders = params.num;
 
   if(!isPutRequest(req)) {
     WooCommerce.get(`orders?per_page=${numOrders}`, (err, data, result) => {
-      if(err) console.log(err.stack);
-      console.log(result);
+      if(err) {
+        console.log(err.stack);
+        return res.status(401);
+      } else return res.status(200).send(JSON.parse(result));
     });
-    return res.status(200).send('Successful connection');
   }
 });
 
@@ -132,6 +137,41 @@ exports.woocommerceNewOrderNotification = functions.https.onRequest((req, res) =
     return res.status(200).send('Successful connection');
   } else return res.status(401).send("Forbidden");
 });
+
+/* Mailer Function  */
+
+let transporter = nodemailer.createTransport({
+  service: 'gmail',
+  auth: {
+      user: 'gustablegamer@gmail.com',
+      pass: '52Alpacas'
+  }
+});
+
+exports.sendEmail = functions.https.onRequest((req, res) => {
+  cors(req, res, () => {
+    const dest = req.query.dest;
+
+    const mailOptions = {
+      from: 'Gustavo Alves <gustablegamer@gmail.com>', // Something like: Jane Doe <janedoe@gmail.com>
+      to: dest,
+      subject: 'I\'M A PICKLE!!!', // email subject
+      html: `<p style="font-size: 16px;">Pickle Riiiiiiiiiiiiiiiick!!</p>
+          <br />
+          <img src="https://images.prod.meredith.com/product/fc8754735c8a9b4aebb786278e7265a5/1538025388228/l/rick-and-morty-pickle-rick-sticker" />
+      ` // email content in HTML
+    };
+
+    // returning result
+    return transporter.sendMail(mailOptions, (err, info) => {
+      if(err){
+          return res.send(err.toString());
+      }
+      return res.send('Sended');
+    });
+  });
+});
+
 
 // Checks if the HTTP Request's method is a PUT method
 const isPutRequest = req => (req.method === 'PUT') ? true : false;
