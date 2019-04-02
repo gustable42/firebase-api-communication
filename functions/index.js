@@ -25,117 +25,170 @@ const WooCommerce = new WooCommerceAPI({
 });
 
 /**
+ * Request a list of orders from Woocommerce API
  * @method GET
  * @param num = number of orders that will be requested
  */
 exports.woocommerceOrders = functions.https.onRequest((req, res) => {
   let numOrders = 10;
-  let ordersList
   const params = req.query;
 
   if(typeof params.num !== 'undefined') numOrders = params.num;
 
-  if(!isPutRequest(req)) {
-    WooCommerce.get(`orders?per_page=${numOrders}`, (err, data, result) => {
-      if(err) {
-        console.log(err.stack);
-        return res.status(401);
-      } else return res.status(200).send(JSON.parse(result));
-    });
+  if(isPutRequest(req)) {
+    return res.status(401).send('Forbidden');
   }
+
+  WooCommerce.get(`orders?per_page=${numOrders}`, (err, data, result) => {
+    if(err) return res.status(401).send(err.stack);
+
+    return cors(req, res, () => {
+      let format = req.query.format;
+      if (!format) format = req.body.format;
+      res.status(200).send(result);
+    });
+  });
 });
 
 /**
+ * Request a Sales Report from Woocommerce API
  * @method GET
  * @param min = DATE YYYY-MM-DD
  * @param max = DATE YYYY-MM-DD
  */
 exports.woocommerceSalesReport = functions.https.onRequest((req, res) => {
-  let url;
   const params = req.query;
-  let minDate = params.min;
-  let maxDate = params.max;
+  const minDate = params.min;
+  const maxDate = params.max;
 
-  if(!isPutRequest(req) && (typeof minDate !== 'undefined') && (typeof maxDate !== 'undefined')) {
+  if((typeof minDate === 'undefined') || (typeof maxDate === 'undefined')) {
+    return res.status(422).send('Parâmetros min e max são necessários');
+  }
+  if(isPutRequest(req)) {
+    return res.status(401).send('Forbidden');
+  }
+  if(!isMaxDateNewest(minDate, maxDate)) {
+    return res.status(422).send('Data mínima maior que data máxima');
+  }
 
-    if(isMaxDateNewest(minDate, maxDate)) {
+  const requestEndpoint = `reports/sales?date_min=${minDate}&date_max=${maxDate}`;
+  WooCommerce.get(requestEndpoint, (err, data, result) => {
+    if(err) return res.status(401).send(err.stack);
 
-      url = `reports/sales?date_min=${minDate}&date_max=${maxDate}`;
-      WooCommerce.get(url, (err, data, result) => {
-        if(err) console.err(err.stack);
-        console.log(result);
-      });
-
-    } else console.log('Data mínima maior que data máxima');
-    return res.status(200).send('Sucessful connection');
-    
-  } else return res.status(400).send('Bad request');
+    return cors(req, res, () => {
+      let format = req.query.format;
+      if (!format) format = req.body.format;
+      res.status(200).send(result);
+    });
+  });
 });
 
+/**
+ * Request a Top Sellers Report from Woocommerce API
+ * @method GET
+ * @param min = DATE YYYY-MM-DD
+ * @param max = DATE YYYY-MM-DD
+ */
 exports.woocommerceTopSellersReport = functions.https.onRequest((req, res) => {
-  let url;
   const params = req.query;
   let minDate = params.min;
   let maxDate = params.max;
 
-  if(!isPutRequest(req) && (typeof minDate !== 'undefined') && (typeof maxDate !== 'undefined')) {
+  if((typeof minDate === 'undefined') || (typeof maxDate === 'undefined')) {
+    return res.status(422).send('Parâmetros min e max são necessários');
+  }
+  if(isPutRequest(req)) {
+    return res.status(401).send('Forbidden');
+  }
+  if(!isMaxDateNewest(minDate, maxDate)) {
+    return res.status(422).send('Data mínima maior que data máxima');
+  }
 
-    if(isMaxDateNewest(minDate, maxDate)) {
+  const requestEndpoint = `reports/top_sellers??date_min=${minDate}&date_max=${maxDate}`;
+  WooCommerce.get(requestEndpoint, (err, data, result) => {
+    if(err) return res.status(401).send(err.stack);
 
-      url = `reports/top_sellers??date_min=${minDate}&date_max=${maxDate}`;
-      WooCommerce.get(url, (err, data, result) => {
-        if(err) console.err(err.stack);
-        console.log(result);
-      });
-
-    } else console.log('Data mínima maior que data máxima');
-    return res.status(200).send('Sucessful connection');
-    
-  } else return res.status(400).send('Bad request');
+    return cors(req, res, () => {
+      let format = req.query.format;
+      if (!format) format = req.body.format;
+      res.status(200).send(result);
+    });
+  });
 });
 
+/**
+ * Request the number of customers until the moment of the request from Woocommerce API
+ * @method GET
+ */
 exports.woocommerceCustomersTotals = functions.https.onRequest((req, res) => {
-  if(!isPutRequest(req)) {
-    WooCommerce.get('reports/customers/totals', (err, data, result) => {
-      if(err) console.log(err.stack);
-      console.log(result);
+  if(isPutRequest(req)) {
+    return res.status(401).send('Forbidden');
+  } 
+  WooCommerce.get('reports/customers/totals', (err, data, result) => {
+    if(err) return res.status(401).send(err.stack);
+
+    return cors(req, res, () => {
+      let format = req.query.format;
+      if (!format) format = req.body.format;
+      res.status(200).send(result);
     });
-    return res.status(200).send('Successful connection');
-  } else res.status(401).send("Forbidden");
+  });
 });
 
+/**
+ * Request the number of orders until the moment of the request from Woocommerce API
+ * @method GET
+ */
 exports.woocommerceOrdersTotals = functions.https.onRequest((req, res) => {
-  if(!isPutRequest(req)) {
-    WooCommerce.get('reports/orders/totals', (err, data, result) => {
-      if(err) console.log(err.stack);
-      console.log(result);
+  if(isPutRequest(req)) {
+    return res.status(401).send('Forbidden');
+  }
+  WooCommerce.get('reports/orders/totals', (err, data, result) => {
+    if(err) return res.status(401).send(err.stack);
+
+    return cors(req, res, () => {
+      let format = req.query.format;
+      if (!format) format = req.body.format;
+      res.status(200).send(result);
     });
-    return res.status(200).send('Successful connection');
-  } else return res.status(401).send("Forbidden");
+  });
 });
 
+/**
+ * Request the number of products until the moment of the request from Woocommerce API
+ * @method GET
+ */
 exports.woocommerceProductsTotals = functions.https.onRequest((req, res) => {
-  if(!isPutRequest(req)) {
-    WooCommerce.get('reports/products/totals', (err, data, result) => {
-      if(err) console.log(err.stack);
-      console.log(result);
+  if(isPutRequest(req)) {
+    return res.status(401).send('Forbidden');
+  }
+  WooCommerce.get('reports/products/totals', (err, data, result) => {
+    if(err) return res.status(401).send(err.stack);
+
+    return cors(req, res, () => {
+      let format = req.query.format;
+      if (!format) format = req.body.format;
+      res.status(200).send(result);
     });
-    return res.status(200).send('Successful connection');
-  } else return res.status(401).send("Forbidden");
+  });
 });
 
 exports.woocommerceNewOrderNotification = functions.https.onRequest((req, res) => {
   const params = req.query;
-  let id = params.id;
-  console.log(id);
+  const id = params.id;
 
-  if(!isPutRequest(req)) {
-    WooCommerce.get(`orders/${id}`, (err, data, result) => {
-      if(err) console.log(err.stack);
-      console.log(result);
+  if(isPutRequest(req)) {
+    return res.status(401).send('Forbidden');
+  }
+  WooCommerce.get(`orders/${id}`, (err, data, result) => {
+    if(err) return res.status(401).send(err.stack);
+
+    return cors(req, res, () => {
+      let format = req.query.format;
+      if (!format) format = req.body.format;
+      res.status(200).send(result);
     });
-    return res.status(200).send('Successful connection');
-  } else return res.status(401).send("Forbidden");
+  });
 });
 
 /* Mailer Function  */
